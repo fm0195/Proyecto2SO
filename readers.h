@@ -3,4 +3,4 @@
 #include "sharedMem.h"
 #endif
 void getMem(struct SharedMem* mem);
-char* read(struct SharedMem memory, int line);
+char* readLine(struct SharedMem memory, int line);

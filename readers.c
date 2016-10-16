@@ -4,13 +4,17 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/shm.h>
+#include <unistd.h>
 #include "sharedMem.h"
 #include "readers.h"
 
 int main(int argc, char const *argv[]) {
   struct SharedMem mem;
   getMem(&mem);
-  printf("%s\n",read(mem, 0));
+  int value;
+  sem_getvalue(mem.semWriters, &value);
+  printf("The value of the semaphors is %d\n", value);
+  printf("%s\n",readLine(mem, 0));
   return 0;
 }
 
@@ -25,13 +29,18 @@ void getMem(SharedMem* sharedMem){
   voidMem = shmat(memId, 0, 0);
   memcpy((void*)sharedMem,voidMem,sizeof(SharedMem));
   sharedMem->lines = malloc(sizeof(char*)*MAX_LINES);
+
+  /*OBTENER SEMAFOROS*/
+  sharedMem->semReaders = sem_open(SEM_READERS, 0);
+  sharedMem->semWriters = sem_open(SEM_READERS, 0);
+
   for (int i = 0; i < sharedMem->size; i++) {
     char* res = &(((char*)(voidMem+sizeof(SharedMem)))[i*LINE_LENGTH]);
     sharedMem->lines[i] = res;
   }
 }
 
-char* read(SharedMem memory, int line){
+char* readLine(SharedMem memory, int line){
   if (line < memory.size) {
     return memory.lines[line];
   }

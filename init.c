@@ -3,7 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #include <sys/shm.h>
+#include <semaphore.h>
+#include <sys/stat.h>
 #include "init.h"
 #include "sharedMem.h"
 int main(int argc, char const *argv[]) {
@@ -26,6 +29,11 @@ void init(int lines){
   void* voidMem;
   struct SharedMem sharedMem;
   sharedMem.size = lines;
+  
+  /*INICIALIZAR LOS SEMAFOROS. ULTIMO PARAMETRO ES EL VALOR INICIAL*/
+  sem_open(SEM_WRITERS, O_CREAT, 0644, 1);
+  sem_open(SEM_READERS, O_CREAT, 0644, 1);
+
   size = sizeof(SharedMem)+sizeof(char)*LINE_LENGTH*MAX_LINES;
   key = ftok(MEM_DIR, MEM_KEY);
   memId = shmget(key, size, 0777 | IPC_CREAT);
