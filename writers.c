@@ -5,12 +5,13 @@
 #include <sys/types.h>
 #include <sys/shm.h>
 #include "sharedMem.h"
-#include "readers.h"
+#include "writers.h"
 
 int main(int argc, char const *argv[]) {
   struct SharedMem mem;
   getMem(&mem);
-  printf("%s\n",read(mem, 0));
+  write(mem, 0, "Linea 0", 7);
+  printf("%s%s\n", "Escrito: ", mem.lines[0]);
   return 0;
 }
 
@@ -30,10 +31,11 @@ void getMem(SharedMem* sharedMem){
     sharedMem->lines[i] = res;
   }
 }
-
-char* read(SharedMem memory, int line){
+//Parametros: struct,       #linea,    puntero,       largo del string
+void write(SharedMem memory, int line, char* string, int size){
   if (line < memory.size) {
-    return memory.lines[line];
+    memcpy(memory.lines[line], string, size);
+    return;
   }
-  return "ERROR. Out of bounds.";
+  printf("Line %i not written. Out of Bounds.\n", line);
 }
