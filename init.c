@@ -29,6 +29,7 @@ void init(int lines){
   void* voidMem;
   struct SharedMem sharedMem;
   sharedMem.size = lines;
+  sharedMem.isExecuting=1;
   
   /*INICIALIZAR LOS SEMAFOROS. ULTIMO PARAMETRO ES EL VALOR INICIAL*/
   sem_open(SEM_WRITERS, O_CREAT, 0644, 1);

@@ -8,16 +8,39 @@
 #include "writers.h"
 #include <unistd.h>
 
+int cantidad=0;
+int tiempoDormir=0;
+int tiempoEscribir=0;
+int lineaArchivo=0;
+pthread_t idEscritores[500];
+pthread_mutex_t semaphoreMutex;
+
 int main(int argc, char const *argv[]) {
+  if(argc < 4){
+    printf("Error, no se especifico los argumentos válidos.");
+    return 0;
+  }
+  cantidad = atoi(argv[1]);
+  if(cantidad < 1){
+    printf("Error, la cantidad debe ser mayor que 0.");
+    return 0;
+  }
+  tiempoDormir = atoi(argv[2]);
+  if(tiempoDormir < 1){
+    printf("Error, el tiempo de pausa de los hilos debe ser mayor que 0.");
+    return 0;
+  }
+  
+  tiempoEscribir = atoi(argv[3]);  
+  if(tiempoEscribir < 1){
+    printf("Error, el tiempo de escritura de los hilos debe ser mayor que 0.");
+    return 0;
+  }
+    
   struct SharedMem mem;
   getMem(&mem);
-  sem_wait(mem.semWriters);
-  writeLine(mem, 0, "Linea 0", 7);
-  printf("%s%s\n", "Escrito: ", mem.lines[0]);
-  printf("%s\n","Sleeping..." );
-  sleep(5);
-  printf("%s\n","Awake..." );
-  sem_post(mem.semWriters);
+  //writeLine(mem,0,"linea0",6);
+  startWriters(&mem);
   return 0;
 }
 
@@ -42,6 +65,49 @@ void getMem(SharedMem* sharedMem){
     sharedMem->lines[i] = res;
   }
 }
+
+void startWriters(SharedMem* mem) {
+    int counter = 0;
+    while (counter<cantidad) {
+      pthread_t tWriter;
+      DtoWritter* dto = (struct DtoWritter*)malloc(sizeof(struct DtoWritter));
+      dto->id=counter+1;
+      dto->memory=mem;
+      pthread_create(&tWriter, NULL, execWriter,  dto);
+      idEscritores[counter]=tWriter;
+      counter++;
+    }
+    while(mem->isExecuting);
+}
+
+void execWriter(DtoWritter* dto){
+  SharedMem* mem = dto->memory;
+  while(mem->isExecuting) {
+    pthread_mutex_lock(&semaphoreMutex);
+    int valueReader=0;
+    sem_getvalue(mem->semReaders,&valueReader);
+    if(valueReader == 0 || lineaArchivo == mem->size){
+        printf("Archivo lleno o esta siendo leido\n");
+        pthread_mutex_unlock(&semaphoreMutex);
+        sleep(tiempoDormir);
+        continue;
+    }
+    sem_wait(mem->semWriters);
+    pthread_mutex_unlock(&semaphoreMutex);
+    char str[25];
+    
+    sprintf(str,"Linea %d, proceso %d",lineaArchivo,dto->id);
+    writeLine(*mem, lineaArchivo, str,25);
+    printf("%s%s\n", "Writing: ", mem->lines[lineaArchivo]);
+    sleep(tiempoEscribir);
+    lineaArchivo++;
+    printf("%s %d\n","Sleeping... id:",dto->id );
+    sem_post(mem->semWriters);
+    sleep(tiempoDormir);
+    printf("%s %d\n","Awake...id:",dto->id  );
+  }
+}
+
 //Parametros: struct,       #linea,    puntero,       largo del string
 void writeLine(SharedMem memory, int line, char* string, int size){
   if (line < memory.size) {
@@ -49,4 +115,15 @@ void writeLine(SharedMem memory, int line, char* string, int size){
     return;
   }
   printf("Line %i not written. Out of Bounds.\n", line);
+}
+
+char* readLine(SharedMem memory, int line){
+  if (line < memory.size) {
+    return memory.lines[line];
+  }
+  return "ERROR. Out of bounds.";
+}
+
+int emptyLine(char* line) {
+    return *line==0;
 }
