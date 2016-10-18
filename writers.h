@@ -5,12 +5,12 @@
 
 typedef struct DtoWritter {
   int id;
-  SharedMem* memory;
+  struct SharedMem* memory;
 } DtoWritter;
 
 void getMem(struct SharedMem* mem);
 void writeLine(struct SharedMem memory, int line, char* string, int size);
-void startWriters(SharedMem* mem);
-void execWriter(DtoWritter* dto);
+void* startWriters(struct SharedMem* mem);
+void* execWriter(struct DtoWritter* dto);
 char* readLine(struct SharedMem memory, int line);
 int emptyLine(char* line);

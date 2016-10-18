@@ -10,7 +10,8 @@
 #include <semaphore.h>
 typedef struct SharedMem {
   int size;
-  int isExecuting;
+  int offset;
+  int* isExecuting;
   sem_t* semWriters;
   sem_t* semReaders;
   char** lines;

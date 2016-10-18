@@ -23,21 +23,26 @@ void getMem(SharedMem* sharedMem){
   int memId;
   int size;
   void* voidMem;
+  char* res;
   size = sizeof(SharedMem)+sizeof(char)*LINE_LENGTH*MAX_LINES;
   key = ftok(MEM_DIR, MEM_KEY);
   memId = shmget(key, size, 0777 | IPC_CREAT);
   voidMem = shmat(memId, 0, 0);
   memcpy((void*)sharedMem,voidMem,sizeof(SharedMem));
   sharedMem->lines = malloc(sizeof(char*)*MAX_LINES);
-
   /*OBTENER SEMAFOROS*/
   sharedMem->semReaders = sem_open(SEM_READERS, 0);
   sharedMem->semWriters = sem_open(SEM_READERS, 0);
 
   for (int i = 0; i < sharedMem->size; i++) {
-    char* res = &(((char*)(voidMem+sizeof(SharedMem)))[i*LINE_LENGTH]);
+    res = &(((char*)(voidMem+sizeof(SharedMem)))[i*LINE_LENGTH]);
     sharedMem->lines[i] = res;
   }
+  sharedMem->isExecuting = voidMem+sharedMem->offset;
+  printf("Offset: %i\n", sharedMem->offset);
+  printf("Value: %i\n", *(sharedMem->isExecuting));
+  *sharedMem->isExecuting = *sharedMem->isExecuting + 1;
+  printf("New Value: %i\n", *(sharedMem->isExecuting));
 }
 
 char* readLine(SharedMem memory, int line){

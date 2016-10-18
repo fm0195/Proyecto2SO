@@ -25,20 +25,30 @@ int main(int argc, char const *argv[]) {
 void init(int lines){
   key_t key;
   int memId;
-  int size;
+  int sizeOfMemory;//tamanno de la memoria por pedir
+  int sizeOfStruct;//tamanno del struct
+  int sizeOfLines;//tamanno en bytes de la zona para texto
+  int sizeOfVariables;//tamanno en bytes de las variables compartidas;
+  int offset;
+  int isExecuting = 420;
   void* voidMem;
   struct SharedMem sharedMem;
+  sizeOfStruct = sizeof(SharedMem);
+  sizeOfLines = sizeof(char)*LINE_LENGTH*MAX_LINES;
+  sizeOfVariables = sizeof(int);//tamanno de cada una de las variables compartidas.
+  sizeOfMemory = sizeOfStruct+sizeOfLines+sizeOfVariables;
+  offset = sizeOfStruct+sizeOfLines;//lugar donde van a empezar las variables. Al final de las lineas.
   sharedMem.size = lines;
-  sharedMem.isExecuting=1;
-  
+  sharedMem.offset = offset;
+
   /*INICIALIZAR LOS SEMAFOROS. ULTIMO PARAMETRO ES EL VALOR INICIAL*/
   sem_open(SEM_WRITERS, O_CREAT, 0644, 1);
   sem_open(SEM_READERS, O_CREAT, 0644, 1);
 
-  size = sizeof(SharedMem)+sizeof(char)*LINE_LENGTH*MAX_LINES;
   key = ftok(MEM_DIR, MEM_KEY);
-  memId = shmget(key, size, 0777 | IPC_CREAT);
+  memId = shmget(key, sizeOfMemory, 0777 | IPC_CREAT);
   voidMem = shmat(memId, 0, 0);
-  memset(voidMem, 0, size);
-  memcpy(voidMem,&sharedMem,sizeof(SharedMem));
+  memset(voidMem, 0, sizeOfMemory);
+  memcpy(voidMem,&sharedMem,sizeOfStruct);//copiar la estructura  los primeros sizeof(SharedMem) bytes.
+  memcpy(voidMem+offset, &isExecuting, sizeof(int));//del inicio de la memoria compartida (voidMem), offset. Ahi va a quedar la variable.
 }
