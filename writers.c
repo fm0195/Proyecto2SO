@@ -75,13 +75,13 @@ void *startWriters(SharedMem* mem) {
       pthread_create(&tWriter, NULL, execWriter,  dto);
       idEscritores[counter++]=tWriter;
     }
-    while(mem->isExecuting);
+    while(*mem->isExecuting);
     return 0;
 }
 
 void* execWriter(DtoWritter* dto){
   SharedMem* mem = dto->memory;
-  while(mem->isExecuting) {
+  while(*mem->isExecuting) {
     pthread_mutex_lock(&semaphoreMutex);
     int valueReader=0;
     sem_getvalue(mem->semReaders,&valueReader);

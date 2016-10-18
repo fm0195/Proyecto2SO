@@ -39,10 +39,6 @@ void getMem(SharedMem* sharedMem){
     sharedMem->lines[i] = res;
   }
   sharedMem->isExecuting = voidMem+sharedMem->offset;
-  printf("Offset: %i\n", sharedMem->offset);
-  printf("Value: %i\n", *(sharedMem->isExecuting));
-  *sharedMem->isExecuting = *sharedMem->isExecuting + 1;
-  printf("New Value: %i\n", *(sharedMem->isExecuting));
 }
 
 char* readLine(SharedMem memory, int line){

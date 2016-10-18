@@ -30,7 +30,7 @@ void init(int lines){
   int sizeOfLines;//tamanno en bytes de la zona para texto
   int sizeOfVariables;//tamanno en bytes de las variables compartidas;
   int offset;
-  int isExecuting = 420;
+  int isExecuting = 1;
   void* voidMem;
   struct SharedMem sharedMem;
   sizeOfStruct = sizeof(SharedMem);
