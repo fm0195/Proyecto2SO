@@ -44,6 +44,7 @@ void init(int lines){
   /*INICIALIZAR LOS SEMAFOROS. ULTIMO PARAMETRO ES EL VALOR INICIAL*/
   sem_open(SEM_WRITERS, O_CREAT, 0644, 1);
   sem_open(SEM_READERS, O_CREAT, 0644, 1);
+  sem_open(SEM_MUTEX, O_CREAT, 0644, 1);
 
   key = ftok(MEM_DIR, MEM_KEY);
   memId = shmget(key, sizeOfMemory, 0777 | IPC_CREAT);

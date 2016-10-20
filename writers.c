@@ -12,8 +12,7 @@ int cantidad=0;
 int tiempoDormir=0;
 int tiempoEscribir=0;
 int lineaArchivo=0;//creo que esta variable es local a la funcion de cada thread.
-pthread_t idEscritores[500];
-pthread_mutex_t semaphoreMutex;
+pthread_mutex_t numberMutex;
 
 int main(int argc, char const *argv[]) {
   if(argc < 4){
@@ -58,53 +57,67 @@ void getMem(SharedMem* sharedMem){
   /*OBTENER SEMAFOROS*/
   sharedMem->semReaders = sem_open(SEM_READERS, 0);
   sharedMem->semWriters = sem_open(SEM_WRITERS, 0);
+  sharedMem->semMutex = sem_open(SEM_MUTEX, 0);
 
   for (int i = 0; i < sharedMem->size; i++) {
     char* res = &(((char*)(voidMem+sizeof(SharedMem)))[i*LINE_LENGTH]);
     sharedMem->lines[i] = res;
   }
+  sharedMem->isExecuting = voidMem+sharedMem->offset;
 }
 
 void *startWriters(SharedMem* mem) {
     int counter = 0;
+    pthread_t tWriter;
     while (counter<cantidad) {
-      pthread_t tWriter;
       DtoWritter* dto = (struct DtoWritter*)malloc(sizeof(struct DtoWritter));
       dto->id=counter+1;
       dto->memory=mem;
       pthread_create(&tWriter, NULL, execWriter,  dto);
-      idEscritores[counter++]=tWriter;
+      counter++;
     }
-    while(*mem->isExecuting);
+    pthread_join(tWriter,NULL);
     return 0;
 }
 
 void* execWriter(DtoWritter* dto){
   SharedMem* mem = dto->memory;
   while(*mem->isExecuting) {
-    pthread_mutex_lock(&semaphoreMutex);
+    sem_wait(mem->semMutex);
     int valueReader=0;
     sem_getvalue(mem->semReaders,&valueReader);
-    if(valueReader <= 0 || lineaArchivo == mem->size){
-        printf("Archivo lleno o esta siendo leido.\n");
-        pthread_mutex_unlock(&semaphoreMutex);
+    if(valueReader <= 0){
+        printf("El archivo se esta leyendo.\n");
+        sem_post(mem->semMutex);
         sleep(tiempoDormir);
         continue;
     }
+    pthread_mutex_lock(&numberMutex);
+    if(lineaArchivo == mem->size){
+        //printf("El archivo esta lleno.\n");
+        sem_post(mem->semMutex);
+        pthread_mutex_unlock(&numberMutex);
+        sleep(tiempoDormir);
+        continue;
+    }
+    pthread_mutex_unlock(&numberMutex);
     sem_wait(mem->semWriters);
-    pthread_mutex_unlock(&semaphoreMutex);
+    sem_post(mem->semMutex);
     char str[25];
-
+    
     sprintf(str,"Linea %d, proceso %d",lineaArchivo,dto->id);
     writeLine(*mem, lineaArchivo, str,25);
     printf("%s%s\n", "Writing: ", mem->lines[lineaArchivo]);
-    sleep(tiempoEscribir);
+    pthread_mutex_lock(&numberMutex);
     lineaArchivo++;
+    pthread_mutex_unlock(&numberMutex);
+    sleep(tiempoEscribir);
     printf("%s %d\n","Sleeping... id:",dto->id );
     sem_post(mem->semWriters);
     sleep(tiempoDormir);
     printf("%s %d\n","Awake...id:",dto->id  );
   }
+  pthread_exit(NULL);
   return 0;
 }
 
