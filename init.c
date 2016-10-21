@@ -41,6 +41,10 @@ void init(int lines){
   sharedMem.size = lines;
   sharedMem.offset = offset;
 
+  sem_unlink(SEM_WRITERS);
+  sem_unlink(SEM_READERS);
+  sem_unlink(SEM_MUTEX);
+
   /*INICIALIZAR LOS SEMAFOROS. ULTIMO PARAMETRO ES EL VALOR INICIAL*/
   sem_open(SEM_WRITERS, O_CREAT, 0644, 1);
   sem_open(SEM_READERS, O_CREAT, 0644, 1);
