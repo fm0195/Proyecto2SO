@@ -86,10 +86,11 @@ void* execWriter(Dto* dto){
     int valueReader=0;
     sem_getvalue(mem->semReaders,&valueReader);
     if(valueReader <= 0){//si existen readers, dormir
-        printf("El archivo se esta leyendo.\n");
+        printf("El archivo se esta leyendo. Esperando...\n");
         sem_post(mem->semMutex);//libero el semaforo para consultar semaforo.
         sem_wait(mem->semReaders);
         sem_post(mem->semReaders);
+        printf("Archivo liberado.\n");
         continue;
     }
     sem_post(mem->semMutex);
@@ -98,7 +99,7 @@ void* execWriter(Dto* dto){
     int i;
     for (i=0; i < mem->size; i++) {
       if(emptyLine(readLine(*mem, i))){
-        sprintf(str,"Linea %d, proceso %d",i,dto->id);
+        sprintf(str,"Linea %d, proceso %d. ",i,dto->id);
 
         time_t t = time(NULL);//consigo la fecha y hora del sistema
         struct tm *tm = localtime(&t);

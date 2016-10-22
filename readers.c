@@ -86,31 +86,29 @@ void* execReader(Dto* dto){
   while(*mem->isExecuting) {
     pthread_mutex_lock(&semMutex);//pido mutex para consultar numero de readers.
     sem_getvalue(mem->semWriters, &semValue);
-    if (semValue == 1) {
-      sem_wait(mem->semWriters);
-    }
     if (numReaders++ == 0) {//Primer reader, pedir el semaforo
-      pthread_mutex_unlock(&semMutex);//devuelvo mutex
+      sem_wait(mem->semWriters);
       sem_wait(mem->semReaders);
-      printf("Primer reader. Pedi semaforo\n");
+      printf("\n---------------------\n");
+      pthread_mutex_unlock(&semMutex);//devuelvo mutex
     }else{
       pthread_mutex_unlock(&semMutex);//devuelvo mutex
     }
     if(*mem->lines[currentLine]){
       sleep(readingTime);
-      printf("Read: %s . Reader Id: %i\n", readLine(*mem, currentLine), dto->id);
+      printf("Read: %s . ---- Reader Id: %i \n", readLine(*mem, currentLine), dto->id);
     }else{
-      printf("Linea %i vacia . Reader Id: %i\n", currentLine, dto->id);
+      printf("Linea %i vacia. ---- Reader Id: %i \n", currentLine, dto->id);
     }
     if (++currentLine >= mem->size) {
       currentLine = 0;
     }
     pthread_mutex_lock(&semMutex);//pido mutex para consultar numero de readers.
     if (--numReaders == 0){//Si soy el ultimo proceso
-      pthread_mutex_unlock(&semMutex);//devuelvo mutex
       sem_post(mem->semReaders);//devuelvo el semaforo
       sem_post(mem->semWriters);//devuelvo el semaforo
-      printf("Ultimo reader. Devolvi semaforos.\n");
+      printf("\n---------------------\n");
+      pthread_mutex_unlock(&semMutex);//devuelvo mutex
     }else{
       pthread_mutex_unlock(&semMutex);//devuelvo mutex
     }
