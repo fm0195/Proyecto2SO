@@ -9,6 +9,12 @@
 #define SEM_READERS "/semreader"
 #define SEM_MUTEX "/sem_mutex"
 #include <semaphore.h>
+
+typedef struct Dto {
+  int id;
+  struct SharedMem* memory;
+} Dto;
+
 typedef struct SharedMem {
   int size;
   int offset;

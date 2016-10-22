@@ -9,10 +9,10 @@
 #include <unistd.h>
 
 int cantidad=0;
-int tiempoDormir=0;
-int tiempoEscribir=0;
+int sleepTime=0;
+int writeTime=0;
 
-int main(int argc, char const *argv[]) {// ./writers.o cant tiempoDormir tiempoEscribir
+int main(int argc, char const *argv[]) {// ./writers.o cant sleepTime writeTime
   if(argc < 4){
     printf("Error, no se especifico los argumentos válidos.");
     return 0;
@@ -22,14 +22,14 @@ int main(int argc, char const *argv[]) {// ./writers.o cant tiempoDormir tiempoE
     printf("Error, la cantidad debe ser mayor que 0.");
     return 0;
   }
-  tiempoDormir = atoi(argv[2]);
-  if(tiempoDormir < 1){
+  sleepTime = atoi(argv[2]);
+  if(sleepTime < 1){
     printf("Error, el tiempo de pausa de los hilos debe ser mayor que 0.");
     return 0;
   }
 
-  tiempoEscribir = atoi(argv[3]);
-  if(tiempoEscribir < 1){
+  writeTime = atoi(argv[3]);
+  if(writeTime < 1){
     printf("Error, el tiempo de escritura de los hilos debe ser mayor que 0.");
     return 0;
   }
@@ -68,7 +68,7 @@ void *startWriters(SharedMem* mem) {
     int counter = 0;
     pthread_t tWriter;
     while (counter < cantidad) {
-      DtoWritter* dto = (struct DtoWritter*)malloc(sizeof(struct DtoWritter));
+      Dto* dto = (struct Dto*)malloc(sizeof(struct Dto));
       dto->id=counter+1;
       dto->memory=mem;
       pthread_create(&tWriter, NULL, execWriter,  dto);
@@ -78,7 +78,7 @@ void *startWriters(SharedMem* mem) {
     return 0;
 }
 
-void* execWriter(DtoWritter* dto){
+void* execWriter(Dto* dto){
   SharedMem* mem = dto->memory;
   while(*mem->isExecuting) {
     sem_wait(mem->semMutex);//pido mutex para consultar semaforo.
@@ -87,14 +87,12 @@ void* execWriter(DtoWritter* dto){
     if(valueReader <= 0){//si existen readers, dormir
         printf("El archivo se esta leyendo.\n");
         sem_post(mem->semMutex);//libero el semaforo para consultar semaforo.
-        /*
-        sem_wait(readers);
-        sem_post(readers);*/
-        sleep(tiempoDormir);
+        sem_wait(mem->semReaders);
+        sem_post(mem->semReaders);
         continue;
     }
-    sem_wait(mem->semWriters);
     sem_post(mem->semMutex);
+    sem_wait(mem->semWriters);
     char str[25];
     int i;
     for (i=0; i < mem->size; i++) {
@@ -102,15 +100,15 @@ void* execWriter(DtoWritter* dto){
         sprintf(str,"Linea %d, proceso %d",i,dto->id);
         writeLine(*mem, i, str, 25);
         printf("%s%s\n", "Writing: ", mem->lines[i]);
-        sleep(tiempoEscribir);
+        sleep(writeTime);
         break;
       }
     }
     if(i == mem->size){
       printf("%s\n", "Full file");
     }
-    sleep(tiempoDormir);
     sem_post(mem->semWriters);
+    sleep(sleepTime);
   }
   pthread_exit(NULL);
   return 0;
