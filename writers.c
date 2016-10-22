@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/shm.h>
+#include <time.h>
 #include "sharedMem.h"
 #include "writers.h"
 #include <unistd.h>
@@ -93,12 +94,17 @@ void* execWriter(Dto* dto){
     }
     sem_post(mem->semMutex);
     sem_wait(mem->semWriters);
-    char str[25];
+    char str[LINE_LENGTH];
     int i;
     for (i=0; i < mem->size; i++) {
       if(emptyLine(readLine(*mem, i))){
         sprintf(str,"Linea %d, proceso %d",i,dto->id);
-        writeLine(*mem, i, str, 25);
+
+        time_t t = time(NULL);//consigo la fecha y hora del sistema
+        struct tm *tm = localtime(&t);
+        strcat(str,asctime(tm));
+
+        writeLine(*mem, i, str, LINE_LENGTH);
         printf("%s%s\n", "Writing: ", mem->lines[i]);
         sleep(writeTime);
         break;
