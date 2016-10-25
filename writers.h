@@ -9,3 +9,5 @@ void* startWriters(struct SharedMem* mem);
 void* execWriter(struct Dto* dto);
 char* readLine(struct SharedMem memory, int line);
 int emptyLine(char* line);
+void changeState(SharedMem memory, int idProcess, int state);
+void appendLineFile(char* line);

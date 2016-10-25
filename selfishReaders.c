@@ -37,6 +37,7 @@ int main(int argc, char const *argv[]) {// ./writers.o cant sleepTime readTime
 
   struct SharedMem mem;
   getMem(&mem);
+  memcpy(mem.amountSelfishReaders,&cantidad,sizeof(int));
   startSelfishReader(&mem);
   return 0;
 }
@@ -46,22 +47,33 @@ void getMem(SharedMem* sharedMem){
   int memId;
   int size;
   void* voidMem;
-  size = sizeof(SharedMem)+sizeof(char)*LINE_LENGTH*MAX_LINES;
+  size = sizeof(SharedMem)+sizeof(char)*LINE_LENGTH*MAX_LINES+ sizeof(int)*MAX_PROCESS;
   key = ftok(MEM_DIR, MEM_KEY);
   memId = shmget(key, size, 0777 | IPC_CREAT);
   voidMem = shmat(memId, 0, 0);
   memcpy((void*)sharedMem,voidMem,sizeof(SharedMem));
   sharedMem->lines = malloc(sizeof(char*)*MAX_LINES);
+  sharedMem->values = malloc(sizeof(int*)*MAX_PROCESS);
 
   /*OBTENER SEMAFOROS*/
   sharedMem->semReaders = sem_open(SEM_READERS, 0);
   sharedMem->semWriters = sem_open(SEM_WRITERS, 0);
   sharedMem->semMutex = sem_open(SEM_MUTEX, 0);
-
+  sharedMem->semInfo = sem_open(SEM_INFO, 0);
+  sharedMem->semLog = sem_open(SEM_LOG, 0);
+  char* res;
   for (int i = 0; i < sharedMem->size; i++) {
-    char* res = &(((char*)(voidMem+sizeof(SharedMem)))[i*LINE_LENGTH]);
+    res = &(((char*)(voidMem+sizeof(SharedMem)))[i*LINE_LENGTH]);
     sharedMem->lines[i] = res;
   }
+
+  int* pointerValues=(int*)(res+LINE_LENGTH);
+  for (int i = 0; i < MAX_PROCESS; i++) {
+    sharedMem->values[i] = pointerValues;
+    pointerValues  += sizeof(int);
+  }
+
+  sharedMem->amountSelfishReaders = voidMem+sharedMem->offset +(3*sizeof(int));
   sharedMem->isExecuting = voidMem+sharedMem->offset;
 }
 
@@ -96,6 +108,11 @@ void* execSelfishReader(Dto* dto){
     }
     sem_post(mem->semMutex);
     sem_wait(mem->semWriters);
+
+    sem_wait(mem->semInfo);
+    changeState(*mem,dto->id,2);
+    sem_post(mem->semInfo);
+
     int lines[mem->size];
     int i;
     int numLines = 0;
@@ -104,18 +121,35 @@ void* execSelfishReader(Dto* dto){
         lines[numLines++] = i;
       }
     }
+    char outputLine[LINE_LENGTH+70];
     if(numLines == 0){
-      printf("%s\n", "Empty file");
+      sprintf(outputLine, "Empty file---- Selfish Id: %i",dto->id);
+      printf("%s\n",outputLine );
     }else{
       int res = numLines == 1 ? 0 : rand() % (numLines - 1);
       res = lines[res];
       sleep(readTime);
-      printf("Read: %s . ---- Selfish Id: %i \n", readLine(*mem, res), dto->id);
+      sprintf(outputLine,"Read: %s . ---- Selfish Id: %i \n", readLine(*mem, res), dto->id);
+      printf("%s\n",outputLine );
       deleteLine(*mem, res);
       printf("Line %i deleted.\n", res);
+      strcat(outputLine,"Borrado.\n");
     }
+    sem_wait(mem->semLog);
+    appendLineFile(outputLine);
+    sem_post(mem->semLog);
+
     sem_post(mem->semWriters);
+
+    sem_wait(mem->semInfo);
+    changeState(*mem,dto->id,1);
+    sem_post(mem->semInfo);
+
     sleep(sleepTime);
+
+    sem_wait(mem->semInfo);
+    changeState(*mem,dto->id,0);
+    sem_post(mem->semInfo);
   }
   pthread_exit(NULL);
   return 0;
@@ -136,4 +170,18 @@ void deleteLine(SharedMem memory, int line){
 
 int emptyLine(char* line) {
     return *line==0;
+}
+
+void changeState(SharedMem memory, int idProcess, int state){ // 0->Bloqueado  1 -> durmiendo 2-> Usando el archivo
+   if (idProcess < cantidad){
+     int index = idProcess+199;
+     memcpy(memory.values[index], &state, sizeof(int));
+   }
+}
+
+void appendLineFile(char* line){
+  FILE *out = fopen("Bitacora.txt", "a");
+  fprintf(out, "%s", line);
+  fclose(out);
+  return 0;
 }

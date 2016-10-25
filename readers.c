@@ -37,6 +37,18 @@ int main(int argc, char const *argv[]) {
   struct SharedMem mem;
   getMem(&mem);
   pthread_mutex_init(&semMutex, NULL);
+   memcpy(mem.amountReaders,&cantidad,sizeof(int));
+  //sem_post(mem.semWriters);
+  //sem_post(mem.semReaders);
+  // int valueReader=0;
+  // sem_getvalue(mem.semReaders,&valueReader);
+  // printf("R: %d\n", valueReader);
+  // sem_getvalue(mem.semMutex,&valueReader);
+  // printf("M: %d\n", valueReader);
+  // sem_getvalue(mem.semWriters,&valueReader);
+  // printf("W: %d\n", valueReader);
+  // sem_getvalue(mem.semInfo,&valueReader);
+  // printf("I: %d\n", valueReader);
   startReaders(&mem);
   return 0;
 }
@@ -47,22 +59,34 @@ void getMem(SharedMem* sharedMem){
   int size;
   void* voidMem;
   char* res;
-  size = sizeof(SharedMem)+sizeof(char)*LINE_LENGTH*MAX_LINES;
+  size = sizeof(SharedMem)+sizeof(char)*LINE_LENGTH*MAX_LINES + sizeof(int)*MAX_PROCESS;
   key = ftok(MEM_DIR, MEM_KEY);
   memId = shmget(key, size, 0777 | IPC_CREAT);
   voidMem = shmat(memId, 0, 0);
   memcpy((void*)sharedMem,voidMem,sizeof(SharedMem));
   sharedMem->lines = malloc(sizeof(char*)*MAX_LINES);
+  sharedMem->values = malloc(sizeof(int*)*MAX_PROCESS);
   /*OBTENER SEMAFOROS*/
   sharedMem->semReaders = sem_open(SEM_READERS, 0);
   sharedMem->semWriters = sem_open(SEM_WRITERS, 0);
   sharedMem->semMutex = sem_open(SEM_MUTEX, 0);
+  sharedMem->semInfo = sem_open(SEM_INFO, 0);
+  sharedMem->semLog = sem_open(SEM_LOG, 0);
 
   for (int i = 0; i < sharedMem->size; i++) {
     res = &(((char*)(voidMem+sizeof(SharedMem)))[i*LINE_LENGTH]);
     sharedMem->lines[i] = res;
   }
+
+  int* pointerValues=(int*)(res+LINE_LENGTH);
+  for (int i = 0; i < MAX_PROCESS; i++) {
+    sharedMem->values[i] = pointerValues;
+    pointerValues  += sizeof(int);
+  }
+
   sharedMem->isExecuting = voidMem+sharedMem->offset;
+  sharedMem->amountReaders = voidMem+sharedMem->offset +sizeof(int);
+
 }
 
 void *startReaders(SharedMem* mem) {
@@ -82,10 +106,8 @@ void *startReaders(SharedMem* mem) {
 void* execReader(Dto* dto){
   SharedMem* mem = dto->memory;
   int currentLine = 0;
-  int semValue;
   while(*mem->isExecuting) {
     pthread_mutex_lock(&semMutex);//pido mutex para consultar numero de readers.
-    sem_getvalue(mem->semWriters, &semValue);
     if (numReaders++ == 0) {//Primer reader, pedir el semaforo
       sem_wait(mem->semWriters);
       sem_wait(mem->semReaders);
@@ -94,12 +116,22 @@ void* execReader(Dto* dto){
     }else{
       pthread_mutex_unlock(&semMutex);//devuelvo mutex
     }
+    sem_wait(mem->semInfo);
+    changeState(*mem,dto->id,2);
+    sem_post(mem->semInfo);
+    char outputLine[LINE_LENGTH+70];
     if(*mem->lines[currentLine]){
       sleep(readingTime);
-      printf("Read: %s . ---- Reader Id: %i \n", readLine(*mem, currentLine), dto->id);
+      sprintf(outputLine,"Read: %s . ---- Reader Id: %i ", readLine(*mem, currentLine), dto->id);
     }else{
-      printf("Linea %i vacia. ---- Reader Id: %i \n", currentLine, dto->id);
+      sprintf(outputLine,"Linea %i vacia. ---- Reader Id: %i ", currentLine, dto->id);
     }
+    printf("%s\n", outputLine);
+    strcat(outputLine," Lectura.\n");
+    sem_wait(mem->semLog);
+    appendLineFile(outputLine);
+    sem_post(mem->semLog);
+
     if (++currentLine >= mem->size) {
       currentLine = 0;
     }
@@ -112,7 +144,15 @@ void* execReader(Dto* dto){
     }else{
       pthread_mutex_unlock(&semMutex);//devuelvo mutex
     }
+    sem_wait(mem->semInfo);
+    changeState(*mem,dto->id,1);
+    sem_post(mem->semInfo);
+
     sleep(sleepTime);
+
+    sem_wait(mem->semInfo);
+    changeState(*mem,dto->id,0);
+    sem_post(mem->semInfo);
   }
   pthread_exit(NULL);
   return 0;
@@ -123,4 +163,18 @@ char* readLine(SharedMem memory, int line){
     return memory.lines[line];
   }
   return "ERROR. Out of bounds.";
+}
+
+void changeState(SharedMem memory, int idProcess, int state){ // 0->Bloqueado  1 -> durmiendo 2-> Usando el archivo
+   int amountReaders = *(memory.amountReaders);
+   if (idProcess <= amountReaders){
+     memcpy(memory.values[idProcess-1], &state, sizeof(int));
+   }
+}
+
+void appendLineFile(char* line){
+  FILE *out = fopen("Bitacora.txt", "a");
+  fprintf(out, "%s", line);
+  fclose(out);
+  return 0;
 }

@@ -8,3 +8,4 @@ void* startSelfishReader(struct SharedMem* mem);
 void* execSelfishReader(struct Dto* dto);
 char* readLine(struct SharedMem memory, int line);
 int emptyLine(char* line);
+void changeState(SharedMem memory, int idProcess, int state);
