@@ -38,17 +38,6 @@ int main(int argc, char const *argv[]) {
   getMem(&mem);
   pthread_mutex_init(&semMutex, NULL);
    memcpy(mem.amountReaders,&cantidad,sizeof(int));
-  //sem_post(mem.semWriters);
-  //sem_post(mem.semReaders);
-  // int valueReader=0;
-  // sem_getvalue(mem.semReaders,&valueReader);
-  // printf("R: %d\n", valueReader);
-  // sem_getvalue(mem.semMutex,&valueReader);
-  // printf("M: %d\n", valueReader);
-  // sem_getvalue(mem.semWriters,&valueReader);
-  // printf("W: %d\n", valueReader);
-  // sem_getvalue(mem.semInfo,&valueReader);
-  // printf("I: %d\n", valueReader);
   startReaders(&mem);
   return 0;
 }
