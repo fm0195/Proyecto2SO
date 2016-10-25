@@ -5,23 +5,24 @@
 #include <sys/types.h>
 #include <sys/shm.h>
 #include "sharedMem.h"
+int memId;
 
 int main(int argc, char const *argv[]) {
   struct SharedMem mem;
   getMem(&mem);
   int val=0;
   memcpy(mem.isExecuting,&val,sizeof(int));
-  sleep(60);
+  sleep(10);
   sem_unlink(mem.semWriters);
   sem_unlink(mem.semReaders);
   sem_unlink(mem.semMutex);
   sem_unlink(mem.semInfo);
+  shmctl(memId, IPC_RMID, NULL);
   return 0;
 }
 
 void getMem(SharedMem* sharedMem){
-   key_t key;
-  int memId;
+  key_t key;
   int size;
   void* voidMem;
   char* res;

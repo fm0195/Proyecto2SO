@@ -9,6 +9,7 @@
 #include "spy.h"
 #include <unistd.h>
 
+void* voidMem;
 
 int main(int argc, char const *argv[]) {// ./writers.o cant sleepTime readTime
   struct SharedMem mem;
@@ -21,7 +22,6 @@ void getMem(SharedMem* sharedMem){
   key_t key;
   int memId;
   int size;
-  void* voidMem;
   size = sizeof(SharedMem)+sizeof(char)*LINE_LENGTH*MAX_LINES;
   key = ftok(MEM_DIR, MEM_KEY);
   memId = shmget(key, size, 0777 | IPC_CREAT);

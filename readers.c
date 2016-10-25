@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include "sharedMem.h"
 #include "readers.h"
+void* voidMem;
 int cantidad=0;
 int sleepTime=0;
 int readingTime=0;
@@ -46,7 +47,6 @@ void getMem(SharedMem* sharedMem){
   key_t key;
   int memId;
   int size;
-  void* voidMem;
   char* res;
   size = sizeof(SharedMem)+sizeof(char)*LINE_LENGTH*MAX_LINES + sizeof(int)*MAX_PROCESS;
   key = ftok(MEM_DIR, MEM_KEY);
@@ -89,6 +89,7 @@ void *startReaders(SharedMem* mem) {
       counter++;
     }
     pthread_join(tWriter,NULL);
+    shmdt(voidMem);
     return 0;
 }
 
