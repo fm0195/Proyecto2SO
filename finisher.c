@@ -11,6 +11,7 @@ int main(int argc, char const *argv[]) {
   struct SharedMem mem;
   getMem(&mem);
   int val=0;
+  *mem.isExecuting = 0;
   sem_unlink(SEM_INFO);
   sem_unlink(SEM_MUTEX);
   sem_unlink(SEM_LOG);
