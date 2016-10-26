@@ -31,6 +31,7 @@ typedef struct SharedMem {
   int* amountReaders;
   int* amountWriters;
   int* amountSelfishReaders;
+  int* selfishCounter;
   int** values;
 } SharedMem;
 

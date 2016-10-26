@@ -12,6 +12,8 @@
 int cantidad=0;
 int sleepTime=0;
 int writeTime=0;
+int memId;
+void* voidMem;
 
 int main(int argc, char const *argv[]) {// ./writers.o cant sleepTime writeTime
   if(argc < 4){
@@ -44,9 +46,7 @@ int main(int argc, char const *argv[]) {// ./writers.o cant sleepTime writeTime
 
 void getMem(SharedMem* sharedMem){
   key_t key;
-  int memId;
   int size;
-  void* voidMem;
   size = sizeof(SharedMem)+sizeof(char)*LINE_LENGTH*MAX_LINES+sizeof(int)*MAX_PROCESS;
   key = ftok(MEM_DIR, MEM_KEY);
   memId = shmget(key, size, 0777 | IPC_CREAT);
@@ -74,6 +74,7 @@ void getMem(SharedMem* sharedMem){
   }
 
   sharedMem->amountWriters = voidMem+sharedMem->offset +(2*sizeof(int));
+  sharedMem->selfishCounter = voidMem+sharedMem->offset +(4*sizeof(int));
   sharedMem->isExecuting = voidMem+sharedMem->offset;
 }
 
@@ -88,6 +89,7 @@ void *startWriters(SharedMem* mem) {
       counter++;
     }
     pthread_join(tWriter,NULL);
+    shmdt(voidMem);
     return 0;
 }
 
@@ -107,9 +109,9 @@ void* execWriter(Dto* dto){
     }
     sem_post(mem->semMutex);
     sem_wait(mem->semWriters);
-
     sem_wait(mem->semInfo);
     changeState(*mem,dto->id-1,2);
+    (*mem->selfishCounter) = 0;
     sem_post(mem->semInfo);
 
     char str[LINE_LENGTH];
