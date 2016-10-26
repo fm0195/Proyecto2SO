@@ -8,7 +8,7 @@ all: init.c readers.o readers.c
 	./init.o 30
 clean:
 	rm init.o readers.o writers.o selfishReaders.o finisher.o
-	./finisher.o
+	ipcrm -M 0xffffffff
 readers:
 	gcc -pthread -o readers.o readers.c -I.
 init:

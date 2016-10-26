@@ -74,6 +74,7 @@ void getMem(SharedMem* sharedMem){
   }
 
   sharedMem->amountSelfishReaders = voidMem+sharedMem->offset +(3*sizeof(int));
+  sharedMem->selfishCounter = voidMem+sharedMem->offset +(4*sizeof(int));
   sharedMem->isExecuting = voidMem+sharedMem->offset;
 }
 
@@ -109,9 +110,19 @@ void* execSelfishReader(Dto* dto){
     }
     sem_post(mem->semMutex);
     sem_wait(mem->semWriters);
-
+    sem_wait(mem->semInfo);
+    if (*mem->selfishCounter >= 3) {
+      printf("Se han ejecutado 3 Selfish Readers.\n");
+      changeState(*mem,dto->id,1);
+      sem_post(mem->semInfo);
+      sem_post(mem->semWriters);
+      sleep(sleepTime);
+      continue;
+    }
+    sem_post(mem->semInfo);
     sem_wait(mem->semInfo);
     changeState(*mem,dto->id,2);
+    (*mem->selfishCounter)++;
     sem_post(mem->semInfo);
 
     int lines[mem->size];

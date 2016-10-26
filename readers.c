@@ -9,7 +9,9 @@
 #include "readers.h"
 void* voidMem;
 int cantidad=0;
+int memId;
 int sleepTime=0;
+void* voidMem;
 int readingTime=0;
 int numReaders = 0;
 pthread_mutex_t semMutex;
@@ -45,7 +47,6 @@ int main(int argc, char const *argv[]) {
 
 void getMem(SharedMem* sharedMem){
   key_t key;
-  int memId;
   int size;
   char* res;
   size = sizeof(SharedMem)+sizeof(char)*LINE_LENGTH*MAX_LINES + sizeof(int)*MAX_PROCESS;
@@ -75,6 +76,7 @@ void getMem(SharedMem* sharedMem){
 
   sharedMem->isExecuting = voidMem+sharedMem->offset;
   sharedMem->amountReaders = voidMem+sharedMem->offset +sizeof(int);
+  sharedMem->selfishCounter = voidMem+sharedMem->offset +(4*sizeof(int));
 
 }
 
@@ -108,6 +110,7 @@ void* execReader(Dto* dto){
     }
     sem_wait(mem->semInfo);
     changeState(*mem,dto->id,2);
+    (*mem->selfishCounter) = 0;
     sem_post(mem->semInfo);
     char outputLine[LINE_LENGTH+70];
     if(*mem->lines[currentLine]){

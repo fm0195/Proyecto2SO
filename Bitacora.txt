@@ -21,10 +21,10 @@ Escritura.
 Write: Linea 8, writer id: 4. Tue Oct 25 17:24:25 2016
 Escritura.
 Read: Linea 5, writer id: 1. Tue Oct 25 17:24:22 2016
- . ---- Selfish Id: 1 
+ . ---- Selfish Id: 1
 Borrado.
 Read: Linea 3, writer id: 4. Tue Oct 25 17:24:19 2016
- . ---- Selfish Id: 2 
+ . ---- Selfish Id: 2
 Borrado.
 Write: Linea 3, writer id: 5. Tue Oct 25 17:24:30 2016
 Escritura.
@@ -41,10 +41,10 @@ Escritura.
 Write: Linea 11, writer id: 4. Tue Oct 25 17:24:35 2016
 Escritura.
 Read: Linea 4, writer id: 5. Tue Oct 25 17:24:20 2016
- . ---- Selfish Id: 1 
+ . ---- Selfish Id: 1
 Borrado.
 Read: Linea 9, writer id: 2. Tue Oct 25 17:24:33 2016
- . ---- Selfish Id: 2 
+ . ---- Selfish Id: 2
 Borrado.
 Write: Linea 4, writer id: 1. Tue Oct 25 17:24:40 2016
 Escritura.

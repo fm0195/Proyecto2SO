@@ -42,7 +42,7 @@ void init(int lines){
 
   sizeOfLines = sizeof(char)*LINE_LENGTH*MAX_LINES;
   sizeOfVariables = sizeof(int);//tamanno de cada una de las variables compartidas.
-  sizeOfMemory = sizeOfStruct + sizeOfLines + sizeValues + 4 * sizeOfVariables;
+  sizeOfMemory = sizeOfStruct + sizeOfLines + sizeValues + 5 * sizeOfVariables;
   offset = sizeOfStruct + sizeOfLines + sizeValues;//lugar donde van a empezar las variables. Al final de las lineas.
   sharedMem.size = lines;
   sharedMem.offset = offset;
@@ -67,6 +67,7 @@ void init(int lines){
   memcpy(voidMem+offset+sizeof(int), &initialValueAmountOfProcess, sizeof(int));
   memcpy(voidMem+offset+sizeof(int)*2, &initialValueAmountOfProcess, sizeof(int));
   memcpy(voidMem+offset+sizeof(int)*3, &initialValueAmountOfProcess, sizeof(int));
+  memcpy(voidMem+offset+sizeof(int)*4, &initialValueAmountOfProcess, sizeof(int));
 }
 void initLog(){
   remove("Bitacora.txt");
